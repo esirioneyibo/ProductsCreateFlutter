@@ -65,6 +65,7 @@ class MyApp extends StatefulWidget{
 
 
 class _MyAppState extends State<MyApp>{
+  var _scaffoldKey= new GlobalKey<ScaffoldState>();
   String _value="Ciudad", _valueLocalidad="Localidad", URL1, URL2;
   Color nombreLine=Colors.transparent, _ciudadesDrop=Colors.transparent;
   TextField nombre, descripcion, cantidad, fechaCreacion;
@@ -78,7 +79,9 @@ class _MyAppState extends State<MyApp>{
   
   ///Listener for the upload button that check all the required fields.
   void onPressedButton() {
-    new CircularProgressIndicator();
+
+
+
     var valido = true;
     if (nombre.controller.value.text.length == 0) {
       valido = false;
@@ -116,6 +119,17 @@ class _MyAppState extends State<MyApp>{
   ///Method that upload the images to Firebase Storage, then take the links of
   ///the image and create a new Product with all the info provided by the user
   Future<Null> uploadFiles() async{
+
+    AlertDialog dialog;
+    showDialog(context: context,
+        builder: (BuildContext context) {
+          return dialog=new AlertDialog(
+              title: new Text("Subiendo información..."),
+              content: new LinearProgressIndicator()
+
+          );
+        });
+
     DeviceInfoPlugin deviceInfo= new DeviceInfoPlugin();
     AndroidDeviceInfo androidDeviceInfo= await deviceInfo.androidInfo;
     if(image!=null){
@@ -147,13 +161,17 @@ class _MyAppState extends State<MyApp>{
     var myProduct;
     Text ciudad= ciudadesDrop.hint;
     Text localidad=localidadesDrop.hint;
+    String localidadCode;
+    localidad.data.compareTo("Localidad")==0 ? localidadCode=null : localidadCode= poblacionesCode.elementAt(poblaciones.indexOf(localidad.data));
+
+
     if(urls.length==1){
           myProduct = <String, dynamic>{
         'name': nombre.controller.value.text,
         'descripcion': descripcion.controller.value.text,
         'publishedAt': fechaCreacion.controller.value.text,
         'city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
-        'localidad': poblacionesCode.elementAt(poblaciones.indexOf(localidad.data)),
+        'localidad': localidadCode,
         'photoUrl1': urls.elementAt(0),
         'photoUrl2': null
       };
@@ -163,7 +181,7 @@ class _MyAppState extends State<MyApp>{
         'description': descripcion.controller.value.text,
         'publishedAt': fechaCreacion.controller.value.text,
             'code_city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
-            'code_province': poblacionesCode.elementAt(poblaciones.indexOf(localidad.data)),
+            'code_province': localidadCode,
         'photoUrl1': urls.elementAt(0),
         'photoUrl2': urls.elementAt(1)
       };
@@ -172,6 +190,8 @@ class _MyAppState extends State<MyApp>{
         .child("productos")
         .push();
     reference.set(myProduct);
+
+    Navigator.pop(context); //Make dialog to close
   }
 
 
@@ -189,7 +209,7 @@ class _MyAppState extends State<MyApp>{
   galeria() async {
     File img = await ImagePicker.pickImage(source: ImageSource.gallery);
     if (img != null) {
-      if (image != null) {
+      if (image != null && image2==null) {
         image2 = img;
         setState(() {});
       } else {
@@ -204,7 +224,7 @@ class _MyAppState extends State<MyApp>{
   camara() async {
     File img = await ImagePicker.pickImage(source: ImageSource.camera,);
     if (img != null) {
-      if (image != null) {
+      if (image != null && image2==null) {
         image2 = img;
         setState(() {});
       } else {
@@ -263,6 +283,7 @@ class _MyAppState extends State<MyApp>{
     return new MaterialApp(
       title: "Productos",
       home: new Scaffold(
+        key: _scaffoldKey,
         appBar: new AppBar(title: new Text("Tu producto"),),
         body:
         new Center(
@@ -333,7 +354,7 @@ class _MyAppState extends State<MyApp>{
               new StreamBuilder(
                   stream: Firestore.instance.collection('Ciudades').snapshots(),
                   builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const Text('Loading...');
+                    if (!snapshot.hasData) return const Text('Cargando...');
                     ciudades.clear();
                     for (int i = 0; i < snapshot.data.documents.length; i++) {
                       ds = snapshot.data.documents[i];
@@ -358,7 +379,7 @@ class _MyAppState extends State<MyApp>{
               new StreamBuilder(
                   stream: Firestore.instance.collection('poblaciones').snapshots(),
                   builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const Text('Loading...');
+                    if (!snapshot.hasData) return const Text('Cargando...');
                     poblaciones.clear();
                     for (int i = 0; i < snapshot.data.documents.length; i++) {
                       ds = snapshot.data.documents[i];
