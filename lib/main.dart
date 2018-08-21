@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:image/image.dart' as Im;
 import 'package:flutter/services.dart';
 import 'package:device_info/device_info.dart';
@@ -133,12 +134,15 @@ class _MyAppState extends State<MyApp>{
     DeviceInfoPlugin deviceInfo= new DeviceInfoPlugin();
     AndroidDeviceInfo androidDeviceInfo= await deviceInfo.androidInfo;
     if(image!=null){
+      ImageProperties properties = await FlutterNativeImage.getImageProperties(image.path);
+      File compressedFile = await FlutterNativeImage.compressImage(image.path, quality: 50);
+
       final String fileName= androidDeviceInfo.manufacturer+androidDeviceInfo.model+DateTime.now().toIso8601String()+".jpg";
       final StorageReference reference = FirebaseStorage.instance.ref().child("productos_imagen").child(fileName);
-      final StorageUploadTask task = reference.putFile(image);
+      final StorageUploadTask task = reference.putFile(compressedFile);
       final Uri downloadUrl= (await task.future).downloadUrl;
       URL1=downloadUrl.toString();
-      reference.putFile(image);
+      reference.putFile(compressedFile);
       print(URL1);
     }
     if(image2!=null){
@@ -233,6 +237,40 @@ class _MyAppState extends State<MyApp>{
       }
     }
   }
+  ///Method that shows a Dialog in order of deleting a picture.
+  void _showDeletePhotoDialog(int number){
+    if(number==1 && image==null) return null;
+    if(number==2 && image2==null) return null;
+    showDialog(context: context,
+    builder: (BuildContext context){
+      return AlertDialog(
+        title: new Text("Eliminar"),
+        content: new Text("Desea eliminar la foto?"),
+        actions: <Widget>[
+          new FlatButton(
+              onPressed: (){
+                Navigator.pop(context);
+              },
+              child: new Text("Cancelar")),
+          new FlatButton(
+              onPressed: (){
+                switch(number){
+                  case 1:
+                    image=null;
+                    break;
+                  case 2:
+                    image2=null;
+                    break;
+                }
+                setState(() {});
+                Navigator.pop(context);
+              },
+              child: new Text("Eliminar"))
+        ],
+      );
+    });
+  }
+
   ///Method that shows a Dialog for picking camera or gallery
   void _showDialog() {
     showDialog(
@@ -275,6 +313,8 @@ class _MyAppState extends State<MyApp>{
     );
   }
 
+
+
   ///Build method that creates the main layout.
   @override
   Widget build(BuildContext context){
@@ -296,11 +336,13 @@ class _MyAppState extends State<MyApp>{
                 children: <Widget>[
                   GestureDetector(
                     onTap: (){_showDialog();},
+                    onLongPress: (){_showDeletePhotoDialog(1);},
                     child: image==null ? camera1 : displaySelectedFile(image),
                   ),
                   new Padding(padding: new EdgeInsets.all(12.0)),
                   GestureDetector(
                     onTap: (){_showDialog();},
+                    onLongPress: (){_showDeletePhotoDialog(2);},
                     child: image2==null ? camera2 : displaySelectedFile(image2),
                   ),
                 ],

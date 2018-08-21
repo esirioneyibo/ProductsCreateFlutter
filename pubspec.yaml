@@ -12,6 +12,8 @@ dependencies:
   cloud_firestore:
   firebase_storage:
   image:
+  flutter_native_image:
+    git: https://github.com/btastic/flutter_native_image.git
   device_info:
   fluttertoast:
   camera:
