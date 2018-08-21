@@ -1,6 +1,12 @@
 # flutter_app
 
-A new Flutter application.
+-Flutter Activity para crear productos a partir de fotos, nombre, descripcion, localidad, provincia...
+
+-Se podran escoger 2 fotos ya sea desde la galeria o desde la camara que posteriormente se guardaran en- Firebase Storage.
+
+-Las localidades y provincias se conseguiran a traves de Firebase firestore.
+
+-Cada producto se subira a Firebase Realtime Database.
 
 ## Getting Started
 
