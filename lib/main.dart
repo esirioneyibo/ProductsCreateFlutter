@@ -135,7 +135,7 @@ class _MyAppState extends State<MyApp>{
     AndroidDeviceInfo androidDeviceInfo= await deviceInfo.androidInfo;
     if(image!=null){
       ImageProperties properties = await FlutterNativeImage.getImageProperties(image.path);
-      File compressedFile = await FlutterNativeImage.compressImage(image.path, quality: 50);
+      File compressedFile = await FlutterNativeImage.compressImage(image.path, quality: 30);
 
       final String fileName= androidDeviceInfo.manufacturer+androidDeviceInfo.model+DateTime.now().toIso8601String()+".jpg";
       final StorageReference reference = FirebaseStorage.instance.ref().child("productos_imagen").child(fileName);
