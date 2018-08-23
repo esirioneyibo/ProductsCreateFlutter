@@ -28,8 +28,10 @@ void main() async{
 
 
 DropdownButton ciudadesDrop, localidadesDrop;
-List<String> ciudades= new List();
-List<String> poblaciones = new List();
+List<Ciudad> ciudades=new List();
+List<Poblacion> poblaciones= new List();
+List<String> ciudadesTemp= new List();
+List<String> poblacionesTemp = new List();
 List<String> ciudadesCode= new List();
 List<String> poblacionesCode = new List();
 List<CameraDescription> cameras;
@@ -67,6 +69,7 @@ class MyApp extends StatefulWidget{
 
 class _MyAppState extends State<MyApp>{
   var _scaffoldKey= new GlobalKey<ScaffoldState>();
+  var isFirstTime=true;
   String _value="*Ciudad", _valueLocalidad="Localidad", URL1, URL2;
   Color nombreLine=Colors.transparent, _ciudadesDrop=Colors.transparent;
   TextField nombre, descripcion, cantidad, fechaCreacion;
@@ -132,7 +135,8 @@ class _MyAppState extends State<MyApp>{
     AndroidDeviceInfo androidDeviceInfo= await deviceInfo.androidInfo;
     if(image!=null){
       ImageProperties properties = await FlutterNativeImage.getImageProperties(image.path);
-      File compressedFile = await FlutterNativeImage.compressImage(image.path, quality: 30);
+      File compressedFile = await FlutterNativeImage.compressImage(image.path, quality: 15);
+
 
       final String fileName= androidDeviceInfo.manufacturer+androidDeviceInfo.model+DateTime.now().toIso8601String()+".jpg";
       final StorageReference reference = FirebaseStorage.instance.ref().child("productos_imagen").child(fileName);
@@ -143,12 +147,13 @@ class _MyAppState extends State<MyApp>{
       print(URL1);
     }
     if(image2!=null){
+      File compressedFile2 = await FlutterNativeImage.compressImage(image2.path, quality: 15);
       final String fileName= androidDeviceInfo.manufacturer+androidDeviceInfo.model+DateTime.now().toIso8601String()+".jpg";
       final StorageReference reference = FirebaseStorage.instance.ref().child("productos_imagen").child(fileName);
-      final StorageUploadTask task = reference.putFile(image2);
+      final StorageUploadTask task = reference.putFile(compressedFile2);
       final Uri downloadUrl= (await task.future).downloadUrl;
       URL2=downloadUrl.toString();
-      reference.putFile(image);
+      reference.putFile(compressedFile2);
       print(URL1);
     }
     List<String>urls= new List();
@@ -163,16 +168,21 @@ class _MyAppState extends State<MyApp>{
     Text ciudad= ciudadesDrop.hint;
     Text localidad=localidadesDrop.hint;
     String localidadCode;
-    localidad.data.compareTo("Localidad")==0 ? localidadCode=null : localidadCode= poblacionesCode.elementAt(poblaciones.indexOf(localidad.data));
-
+    localidad.data.compareTo("Localidad")==0 ? localidadCode=null : localidadCode= getLocalidadCode(localidad.data);
+    int cantidadNumber;
+    try{
+      cantidadNumber=int.parse(cantidad.controller.value.text);
+    }catch(Exception){
+      cantidadNumber=0;
+    }
 
     if(urls.length==1){
           myProduct = <String, dynamic>{
         'name': nombre.controller.value.text,
         'des': descripcion.controller.value.text,
-            'cant': int.parse(cantidad.controller.value.text),
+            'cant': cantidadNumber,
         'date': fechaCreacion.controller.value.text,
-        'code_city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
+        'code_city': getCiudadCode(ciudad.data),
         'code_province': localidadCode,
         'photoUrl1': urls.elementAt(0),
         'photoUrl2': null
@@ -181,9 +191,9 @@ class _MyAppState extends State<MyApp>{
           myProduct = <String, dynamic>{
         'name': nombre.controller.value.text,
         'des': descripcion.controller.value.text,
-            'cant': int.parse(cantidad.controller.value.text),
+            'cant': cantidadNumber,
         'date': fechaCreacion.controller.value.text,
-            'code_city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
+            'code_city': getCiudadCode(ciudad.data),
             'code_province': localidadCode,
         'photoUrl1': urls.elementAt(0),
         'photoUrl2': urls.elementAt(1)
@@ -312,6 +322,40 @@ class _MyAppState extends State<MyApp>{
     );
   }
 
+  void changeProvinces(String currentCity){
+    String codeCurrent=getCityCode(currentCity);
+    poblacionesTemp.clear();
+    if(currentCity.compareTo("*Ciudad")==0)poblacionesTemp.add("");
+    else{
+      for(int i=0; i<poblaciones.length;i++){
+        if(poblaciones.elementAt(i).code_city.compareTo(codeCurrent)==0) poblacionesTemp.add(poblaciones.elementAt(i).name);
+      }
+      if(poblacionesTemp.length==0) poblacionesTemp.add("");
+    }
+
+
+
+  }
+
+  String getLocalidadCode(String localidad){
+    for(int i=0; i<poblaciones.length; i++){
+      if(poblaciones.elementAt(i).name.compareTo(localidad)==0) return poblaciones.elementAt(i).code;
+    }
+  }
+
+  String getCiudadCode(String ciudad){
+    for(int i=0; i<ciudades.length; i++){
+      if(ciudades.elementAt(i).name.compareTo(ciudad)==0) return ciudades.elementAt(i).code;
+    }
+  }
+
+  String getCityCode(String currentCity){
+    for(int i=0; i<ciudades.length;i++){
+      if(ciudades.elementAt(i).name.compareTo(currentCity)==0) return ciudades.elementAt(i).code;
+    }
+    return null;
+  }
+
 
 
   ///Build method that creates the main layout.
@@ -323,7 +367,16 @@ class _MyAppState extends State<MyApp>{
       title: "Productos",
       home: new Scaffold(
         key: _scaffoldKey,
-        appBar: new AppBar(title: new Text("Tu producto"),),
+        appBar: new AppBar(title: new Text("Tu producto"),leading: ButtonBar(children: <Widget>[
+          GestureDetector(
+            child: new Icon(Icons.arrow_back),
+            onTap:() {Navigator.pop(context);},
+          ),
+
+        ],
+        ),
+
+        ),
         body:
         new Center(
           child: new Column(
@@ -397,15 +450,16 @@ class _MyAppState extends State<MyApp>{
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const Text('Cargando...');
                     ciudades.clear();
+                    ciudadesTemp.clear();
                     for (int i = 0; i < snapshot.data.documents.length; i++) {
                       ds = snapshot.data.documents[i];
-                      ciudades.add(ds['name']);
-                      ciudadesCode.add(ds['code']);
+                      ciudades.add(Ciudad(ds['name'],ds['code']));
+                      ciudadesTemp.add(ds['name']);
                     }
                     //_value=ciudades.elementAt(0);
                     return ciudadesDrop=new DropdownButton<String>(
                         hint: new Text(_value),
-                        items: ciudades.map((String value){
+                        items: ciudadesTemp.map((String value){
                           return new DropdownMenuItem(
                               value: value,
                               child: new Text('${value}'));
@@ -413,6 +467,8 @@ class _MyAppState extends State<MyApp>{
                         //items: getDropDownMenuItemsCiudad(),
                         onChanged:(String value){
                           _value=value;
+                          _valueLocalidad="Localidad";
+                          changeProvinces(value);
                           setState(() {});
                         });
                   }),
@@ -422,14 +478,22 @@ class _MyAppState extends State<MyApp>{
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const Text('Cargando...');
                     poblaciones.clear();
+                    poblacionesTemp.clear();
+
                     for (int i = 0; i < snapshot.data.documents.length; i++) {
                       ds = snapshot.data.documents[i];
-                      poblaciones.add(ds['name']);
-                      poblacionesCode.add(ds['code']);
+                      poblaciones.add(Poblacion(ds['name'], ds['code'], ds['code_ciudad']));
+                    }
+                    if(ciudadesDrop !=null && !isFirstTime){
+                      Text temp =ciudadesDrop.hint;
+                      this.changeProvinces(temp.data);
+                    }else{
+                      poblacionesTemp.add("");
+                      isFirstTime=false;
                     }
                     return localidadesDrop= new DropdownButton<String>(
                         hint: new Text(_valueLocalidad),
-                        items:poblaciones.map((String value){
+                        items:poblacionesTemp.map((String value){
                           return new DropdownMenuItem(
                               value: value,
                               child: new Text('${value}'));
@@ -452,6 +516,19 @@ class _MyAppState extends State<MyApp>{
 
   }
 
+
 }
+
+class Ciudad{
+  String name, code;
+  Ciudad(this.name, this.code);
+
+}
+
+class Poblacion{
+  String name, code, code_city;
+  Poblacion(this.name, this.code, this.code_city);
+}
+
 
 
