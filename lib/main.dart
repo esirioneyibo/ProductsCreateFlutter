@@ -67,7 +67,7 @@ class MyApp extends StatefulWidget{
 
 class _MyAppState extends State<MyApp>{
   var _scaffoldKey= new GlobalKey<ScaffoldState>();
-  String _value="Ciudad", _valueLocalidad="Localidad", URL1, URL2;
+  String _value="*Ciudad", _valueLocalidad="Localidad", URL1, URL2;
   Color nombreLine=Colors.transparent, _ciudadesDrop=Colors.transparent;
   TextField nombre, descripcion, cantidad, fechaCreacion;
   File image;
@@ -80,9 +80,6 @@ class _MyAppState extends State<MyApp>{
   
   ///Listener for the upload button that check all the required fields.
   void onPressedButton() {
-
-
-
     var valido = true;
     if (nombre.controller.value.text.length == 0) {
       valido = false;
@@ -172,18 +169,20 @@ class _MyAppState extends State<MyApp>{
     if(urls.length==1){
           myProduct = <String, dynamic>{
         'name': nombre.controller.value.text,
-        'descripcion': descripcion.controller.value.text,
-        'publishedAt': fechaCreacion.controller.value.text,
-        'city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
-        'localidad': localidadCode,
+        'des': descripcion.controller.value.text,
+            'cant': int.parse(cantidad.controller.value.text),
+        'date': fechaCreacion.controller.value.text,
+        'code_city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
+        'code_province': localidadCode,
         'photoUrl1': urls.elementAt(0),
         'photoUrl2': null
       };
     }else {
           myProduct = <String, dynamic>{
         'name': nombre.controller.value.text,
-        'description': descripcion.controller.value.text,
-        'publishedAt': fechaCreacion.controller.value.text,
+        'des': descripcion.controller.value.text,
+            'cant': int.parse(cantidad.controller.value.text),
+        'date': fechaCreacion.controller.value.text,
             'code_city': ciudadesCode.elementAt(ciudades.indexOf(ciudad.data)),
             'code_province': localidadCode,
         'photoUrl1': urls.elementAt(0),
